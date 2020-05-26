@@ -1,19 +1,18 @@
 package com.example.demo.service
-import arrow.core.Option
-import arrow.core.toOption
+import arrow.core.*
 import arrow.fx.IO
 import arrow.fx.extensions.fx
 import org.springframework.stereotype.Service
 import org.springframework.beans.factory.annotation.Autowired
 import com.example.demo.repository.CricketerRepository
 import com.example.demo.model.Cricketer
-import java.util.*
 
 @Service
 class CricketerService(@Autowired val cricketerRepository:CricketerRepository) {
-	suspend fun save(cricketer: Cricketer ): IO<Cricketer> {
-		return IO {
-			cricketerRepository.save(cricketer)
+	suspend fun save(cricketer: Cricketer): Either<String, IO<Cricketer>> {
+		return when (val validatedCricketer = cricketer.validate()) {
+			is Validated.Valid -> IO { cricketerRepository.save(validatedCricketer.a) }.right()
+			is Validated.Invalid -> validatedCricketer.e.all.joinToString().left()
 		}
 	}
 

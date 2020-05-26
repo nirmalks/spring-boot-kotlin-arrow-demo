@@ -1,9 +1,29 @@
 package com.example.demo.model
-import javax.persistence.GeneratedValue
-import javax.persistence.Id
-import javax.persistence.Entity
+import arrow.core.Nel
+import arrow.core.Validated
+import arrow.core.extensions.list.traverse.traverse
+import arrow.core.extensions.nonemptylist.semigroup.semigroup
+import arrow.core.extensions.validated.applicative.applicative
+import arrow.core.fix
+import javax.persistence.*
 
 @Entity
-data class Cricketer(@Id @GeneratedValue var id:Number? = null, var name: String, var country: String, var highestScore: Number ) {
-	
+data class Cricketer(@Id @GeneratedValue
+                     var id:Long? = null,
+                     var name: String,
+                     @Enumerated(EnumType.STRING)
+                     var country: Country,
+                     var highestScore: Number ) {
+    fun validate(): Validated<Nel<ValidationError>, Cricketer> {
+        val validation = Rules accumulateErrors {
+            listOf(validateName())
+        }
+        return validation.map {
+            it.fix()
+        }.traverse(Validated.applicative(Nel.semigroup<ValidationError>())) { it }
+                .fix()
+                .map {
+                    it.fix().first()
+                }
+    }
 }

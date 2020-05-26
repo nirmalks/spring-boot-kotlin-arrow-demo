@@ -14,18 +14,17 @@ import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import com.example.demo.service.CricketerService
-import com.example.demo.repository.CricketerRepository
 import com.example.demo.model.Cricketer
 import org.springframework.web.server.ResponseStatusException
 
 @RestController
 @RequestMapping("/api")
-class CricketerController(private val cricketerService: CricketerService , private val cricketerRepository: CricketerRepository){
+class CricketerController(private val cricketerService: CricketerService) {
 	@GetMapping("/cricketers/{id}")
 	suspend fun getCricketer(@PathVariable("id") id: Long):ResponseEntity<Cricketer>  {
 		return when(val cricketer = cricketerService.findById(id).attempt().unsafeRunSync()) {
 			is Either.Left ->  throw ResponseStatusException(
-					HttpStatus.INTERNAL_SERVER_ERROR, "Unable to fetch cricketer")
+					HttpStatus.INTERNAL_SERVER_ERROR, "Unable to fetch cricketer", cricketer.a)
 			is Either.Right-> {
 				when(cricketer.b) {
 					is Some -> ResponseEntity(cricketer.b.orNull(), HttpStatus.OK)
@@ -47,32 +46,43 @@ class CricketerController(private val cricketerService: CricketerService , priva
 		}
 	}
 	
-	@PostMapping("/cricketer")
-	suspend fun addCricketer(@RequestBody cricketer:Cricketer):ResponseEntity<Cricketer>  {
-		when(val cricketer = cricketerService.save(cricketer).attempt().unsafeRunSync()) {
-			is Either.Left -> throw ResponseStatusException(
-					HttpStatus.INTERNAL_SERVER_ERROR, "Unable to save cricketer")
-			is Either.Right-> {
-				return ResponseEntity(cricketer.b , HttpStatus.OK)
+	@PostMapping("/cricketers")
+	suspend fun addCricketer(@RequestBody cricketer:Cricketer):ResponseEntity<Cricketer> {
+		when (val validatedCricketer = cricketerService.save(cricketer)) {
+			is Either.Left -> {
+				throw ResponseStatusException(
+						HttpStatus.BAD_REQUEST, "Unable to add cricketer ${validatedCricketer.a}")
+			}
+			is Either.Right -> {
+				when (val savedCricketer = validatedCricketer.b.attempt().unsafeRunSync()) {
+					is Either.Left ->
+						throw ResponseStatusException(
+								HttpStatus.INTERNAL_SERVER_ERROR, "Unable to add cricketer ${savedCricketer.a.localizedMessage}")
+					is Either.Right -> return ResponseEntity(savedCricketer.b, HttpStatus.OK)
+				}
 			}
 		}
 	}
 	
-	@PutMapping("/cricketer/{id}")
+	@PutMapping("/cricketers/{id}")
 	suspend fun updateCricketer(@PathVariable("id") id: Long, @RequestBody cricketer: Cricketer ):ResponseEntity<Cricketer> {
-		val updatedCricketer  = Cricketer(name = cricketer.name
+		val updatedCricketer = Cricketer(name = cricketer.name
 				, country = cricketer.country
 				, highestScore = cricketer.highestScore)
-		when(val cricketer = cricketerService.save(updatedCricketer).attempt().unsafeRunSync()) {
-			is Either.Left -> throw ResponseStatusException(
-					HttpStatus.INTERNAL_SERVER_ERROR, "Unable to update cricketer $id")
-			is Either.Right-> {
-				return ResponseEntity(cricketer.b , HttpStatus.OK)
+		when (val cricketer = cricketerService.save(cricketer)) {
+			is Either.Left -> { throw ResponseStatusException(HttpStatus.BAD_REQUEST, cricketer.a) }
+			is Either.Right -> {
+				when (val savedCricketer = cricketer.b.attempt().unsafeRunSync()) {
+					is Either.Left ->
+						throw ResponseStatusException(
+								HttpStatus.INTERNAL_SERVER_ERROR, "Unable to update cricketer $id")
+					is Either.Right -> return ResponseEntity(savedCricketer.b, HttpStatus.OK)
+				}
 			}
 		}
 	}
 	
-	@DeleteMapping("/cricketer/{id}")
+	@DeleteMapping("/cricketers/{id}")
 	suspend fun deleteCricketer(@PathVariable("id") id:Long ):ResponseEntity<String> {
 		when(cricketerService.deleteById(id).attempt().unsafeRunSync()) {
 			is Either.Left -> throw ResponseStatusException(
