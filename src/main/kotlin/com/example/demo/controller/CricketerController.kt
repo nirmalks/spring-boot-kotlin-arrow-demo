@@ -48,16 +48,16 @@ class CricketerController(private val cricketerService: CricketerService) {
 	
 	@PostMapping("/cricketers")
 	suspend fun addCricketer(@RequestBody cricketer:Cricketer):ResponseEntity<Cricketer> {
-		when (val validatedCricketer = cricketerService.save(cricketer)) {
+		when (val validatedCricketer = cricketerService.save(cricketer).attempt().unsafeRunSync()) {
 			is Either.Left -> {
 				throw ResponseStatusException(
 						HttpStatus.BAD_REQUEST, "Unable to add cricketer ${validatedCricketer.a}")
 			}
 			is Either.Right -> {
-				when (val savedCricketer = validatedCricketer.b.attempt().unsafeRunSync()) {
+				when (val savedCricketer = validatedCricketer.b) {
 					is Either.Left ->
 						throw ResponseStatusException(
-								HttpStatus.INTERNAL_SERVER_ERROR, "Unable to add cricketer ${savedCricketer.a.localizedMessage}")
+								HttpStatus.INTERNAL_SERVER_ERROR, "Unable to add cricketer ${savedCricketer.a}")
 					is Either.Right -> return ResponseEntity(savedCricketer.b, HttpStatus.OK)
 				}
 			}
@@ -66,13 +66,10 @@ class CricketerController(private val cricketerService: CricketerService) {
 	
 	@PutMapping("/cricketers/{id}")
 	suspend fun updateCricketer(@PathVariable("id") id: Long, @RequestBody cricketer: Cricketer ):ResponseEntity<Cricketer> {
-		val updatedCricketer = Cricketer(name = cricketer.name
-				, country = cricketer.country
-				, highestScore = cricketer.highestScore)
-		when (val cricketer = cricketerService.save(cricketer)) {
-			is Either.Left -> { throw ResponseStatusException(HttpStatus.BAD_REQUEST, cricketer.a) }
+		when (val cricketer = cricketerService.save(cricketer).attempt().unsafeRunSync()) {
+			is Either.Left -> { throw ResponseStatusException(HttpStatus.BAD_REQUEST, cricketer.a.localizedMessage) }
 			is Either.Right -> {
-				when (val savedCricketer = cricketer.b.attempt().unsafeRunSync()) {
+				when (val savedCricketer = cricketer.b) {
 					is Either.Left ->
 						throw ResponseStatusException(
 								HttpStatus.INTERNAL_SERVER_ERROR, "Unable to update cricketer $id")

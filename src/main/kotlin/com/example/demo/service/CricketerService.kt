@@ -9,10 +9,12 @@ import com.example.demo.model.Cricketer
 
 @Service
 class CricketerService(@Autowired val cricketerRepository:CricketerRepository) {
-	suspend fun save(cricketer: Cricketer): Either<String, IO<Cricketer>> {
-		return when (val validatedCricketer = cricketer.validate()) {
-			is Validated.Valid -> IO { cricketerRepository.save(validatedCricketer.a) }.right()
-			is Validated.Invalid -> validatedCricketer.e.all.joinToString().left()
+	suspend fun save(cricketer: Cricketer): IO<Either<String,Cricketer>> {
+		return IO.fx {
+			when (val validatedCricketer = cricketer.validate()) {
+				is Validated.Valid -> cricketerRepository.save(validatedCricketer.a).right()
+				is Validated.Invalid -> validatedCricketer.e.all.joinToString().left()
+			}
 		}
 	}
 
