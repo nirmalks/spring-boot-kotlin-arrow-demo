@@ -90,6 +90,12 @@
 			<artifactId>arrow-fx</artifactId>
 			<version>0.10.5</version>
 		</dependency>
+		<!-- https://mvnrepository.com/artifact/io.arrow-kt/arrow-mtl -->
+		<dependency>
+			<groupId>io.arrow-kt</groupId>
+			<artifactId>arrow-mtl</artifactId>
+			<version>0.10.5</version>
+		</dependency>
 
 	</dependencies>
 

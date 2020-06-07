@@ -9,11 +9,11 @@ import javax.persistence.*
 
 @Entity
 data class Cricketer(@Id @GeneratedValue
-                     var id:Long? = null,
-                     var name: String,
+                     val id:Long? = null,
+                     val name: String,
                      @Enumerated(EnumType.STRING)
-                     var country: Country,
-                     var highestScore: Number ) {
+                     val country: Country,
+                     val highestScore: Number ) {
     fun validate(): Validated<Nel<ValidationError>, Cricketer> {
         val validation = Rules accumulateErrors {
             listOf(validateName())
