@@ -12,20 +12,20 @@ import arrow.mtl.extensions.eithert.monad.monad
 import arrow.mtl.value
 import com.example.demo.model.*
 import com.example.demo.repository.MatchRepository
-import com.example.demo.repository.VenueRepository
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 
 @Service
 class MatchService(@Autowired val matchRepository: MatchRepository,
-        @Autowired val venueRepository: VenueRepository) {
+        @Autowired val venueService: VenueService) {
     suspend fun save(match: Match): IO<Either<OperationError,Match>> {
         return EitherT.monad<OperationError, ForIO>(IO.monad()).fx.monad {
-            val venue = !EitherT(effect {venueRepository.save(Venue(Country.INDIA,"chennai")).right()}
+            val venue = !EitherT(effect {venueService.save(Venue(Country.INDIA,"chennai")).right()}
                             .handleError { OperationError.DBError("Something went wrong").left()})
             matchRepository.save(match)
         }.value().fix()
     }
+
     suspend fun findById(id:Long): IO<Option<Match>> {
         return IO {
             matchRepository.findById(id).get().toOption()

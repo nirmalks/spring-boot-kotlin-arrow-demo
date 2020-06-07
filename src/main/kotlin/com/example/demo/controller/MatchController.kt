@@ -43,33 +43,26 @@ class MatchController(@Autowired val matchService: MatchService) {
 
     @PostMapping("/")
     suspend fun addMatch(@RequestBody match: Match): ResponseEntity<Match> {
-        when (val validatedMatch = matchService.save(match).attempt().unsafeRunSync()) {
+        when (val match = matchService.save(match).unsafeRunSync()) {
             is Either.Left -> {
                 throw ResponseStatusException(
-                        HttpStatus.BAD_REQUEST, "Unable to add match ${validatedMatch.a}")
+                        HttpStatus.INTERNAL_SERVER_ERROR, "Unable to add match ${match.a}")
             }
             is Either.Right -> {
-                when (val savedMatch = validatedMatch.b) {
-                    is Either.Left ->
-                        throw ResponseStatusException(
-                                HttpStatus.INTERNAL_SERVER_ERROR, "Unable to add match ${savedMatch.a}")
-                    is Either.Right -> return ResponseEntity(savedMatch.b, HttpStatus.OK)
-                }
+                return ResponseEntity(match.b, HttpStatus.OK)
             }
         }
     }
 
     @PutMapping("/{id}")
     suspend fun updateMatch(@PathVariable("id") id: Long, @RequestBody match: Match): ResponseEntity<Match> {
-        when (val match = matchService.save(match).attempt().unsafeRunSync()) {
-            is Either.Left -> { throw ResponseStatusException(HttpStatus.BAD_REQUEST, match.a.localizedMessage) }
+        when (val match = matchService.save(match).unsafeRunSync()) {
+            is Either.Left -> {
+                throw ResponseStatusException(
+                        HttpStatus.INTERNAL_SERVER_ERROR, "Unable to add match ${match.a}")
+            }
             is Either.Right -> {
-                when (val savedMatch = match.b) {
-                    is Either.Left ->
-                        throw ResponseStatusException(
-                                HttpStatus.INTERNAL_SERVER_ERROR, "Unable to update match $id")
-                    is Either.Right -> return ResponseEntity(savedMatch.b, HttpStatus.OK)
-                }
+                return ResponseEntity(match.b, HttpStatus.OK)
             }
         }
     }
