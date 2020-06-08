@@ -1,19 +1,16 @@
 package com.example.demo.model
 
-import javax.persistence.Entity
-import javax.persistence.GeneratedValue
-import javax.persistence.Id
-import javax.persistence.OneToMany
+import javax.persistence.*
 
 @Entity
+@Table(name="matches")
 data class Match(
         @Id @GeneratedValue
         val id: Long? = null,
         @OneToMany
         val teams: List<Team>,
         val summary: String,
-        val winner: String,
-        val venue: Venue) {
+        val winner: String) {
         companion object {
                 fun toDomain() {
 
@@ -26,4 +23,4 @@ data class MatchRequest(
         val teams: List<Team>,
         val summary: String,
         val winner: String = ""
-)
+) {}

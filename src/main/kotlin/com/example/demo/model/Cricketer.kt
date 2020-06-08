@@ -13,7 +13,7 @@ data class Cricketer(@Id @GeneratedValue
                      val name: String,
                      @Enumerated(EnumType.STRING)
                      val country: Country,
-                     val highestScore: Number ) {
+                     val highestScore: Number) {
     fun validate(): Validated<Nel<ValidationError>, Cricketer> {
         val validation = Rules accumulateErrors {
             listOf(validateName())
@@ -27,3 +27,5 @@ data class Cricketer(@Id @GeneratedValue
                 }
     }
 }
+
+data class CricketersList(val ids:List<Long>)

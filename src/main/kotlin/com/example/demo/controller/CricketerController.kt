@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import com.example.demo.service.CricketerService
 import com.example.demo.model.Cricketer
+import com.example.demo.model.CricketersList
 import org.springframework.web.server.ResponseStatusException
 
 @RestController
@@ -36,12 +37,14 @@ class CricketerController(private val cricketerService: CricketerService) {
 	}
 	
 	@GetMapping("/cricketers")
-	suspend fun getAllCricketers() :ResponseEntity<List<Cricketer>>  {
+	suspend fun getAllCricketers():ResponseEntity<List<Cricketer>> {
 		return when(val cricketers = cricketerService.getAllPlayers().attempt().unsafeRunSync()) {
-			is Either.Left -> throw ResponseStatusException(
-					HttpStatus.INTERNAL_SERVER_ERROR, "Unable to fetch cricketers")
+			is Either.Left -> {
+				throw ResponseStatusException(
+						HttpStatus.INTERNAL_SERVER_ERROR, "Unable to fetch cricketers ${cricketers.a.localizedMessage}")
+			}
 			is Either.Right-> {
-				return ResponseEntity(cricketers.b, HttpStatus.OK)
+				ResponseEntity(cricketers.b, HttpStatus.OK)
 			}
 		}
 	}
@@ -66,10 +69,10 @@ class CricketerController(private val cricketerService: CricketerService) {
 	
 	@PutMapping("/cricketers/{id}")
 	suspend fun updateCricketer(@PathVariable("id") id: Long, @RequestBody cricketer: Cricketer ):ResponseEntity<Cricketer> {
-		when (val cricketer = cricketerService.save(cricketer).attempt().unsafeRunSync()) {
-			is Either.Left -> { throw ResponseStatusException(HttpStatus.BAD_REQUEST, cricketer.a.localizedMessage) }
+		when (val validatedCricketer = cricketerService.save(cricketer).attempt().unsafeRunSync()) {
+			is Either.Left -> { throw ResponseStatusException(HttpStatus.BAD_REQUEST, validatedCricketer.a.localizedMessage) }
 			is Either.Right -> {
-				when (val savedCricketer = cricketer.b) {
+				when (val savedCricketer = validatedCricketer.b) {
 					is Either.Left ->
 						throw ResponseStatusException(
 								HttpStatus.INTERNAL_SERVER_ERROR, "Unable to update cricketer $id")
@@ -78,9 +81,20 @@ class CricketerController(private val cricketerService: CricketerService) {
 			}
 		}
 	}
-	
+
+	@DeleteMapping("/cricketers/")
+	suspend fun deleteCricketers(@RequestBody list: CricketersList):ResponseEntity<String> {
+		when(val deleteStatus = cricketerService.deleteMultipleCricketers(list.ids.toSet()).attempt().unsafeRunSync()) {
+			is Either.Left -> throw ResponseStatusException(
+					HttpStatus.INTERNAL_SERVER_ERROR, "Unable to delete cricketers ${deleteStatus.a}")
+			is Either.Right-> {
+				return ResponseEntity(HttpStatus.OK)
+			}
+		}
+	}
+
 	@DeleteMapping("/cricketers/{id}")
-	suspend fun deleteCricketer(@PathVariable("id") id:Long ):ResponseEntity<String> {
+	suspend fun deleteCricketer(@PathVariable("id") id:Long):ResponseEntity<String> {
 		when(cricketerService.deleteById(id).attempt().unsafeRunSync()) {
 			is Either.Left -> throw ResponseStatusException(
 					HttpStatus.INTERNAL_SERVER_ERROR, "Unable to delete cricketer $id")

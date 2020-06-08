@@ -1,7 +1,9 @@
 package com.example.demo.service
 import arrow.core.*
 import arrow.fx.IO
+import arrow.fx.IO.Companion.effect
 import arrow.fx.extensions.fx
+import arrow.fx.extensions.io.concurrent.parTraverse
 import org.springframework.stereotype.Service
 import org.springframework.beans.factory.annotation.Autowired
 import com.example.demo.repository.CricketerRepository
@@ -33,6 +35,12 @@ class CricketerService(@Autowired val cricketerRepository:CricketerRepository) {
 	suspend fun deleteById(id: Long): IO<Unit> {
 		return IO {
 			cricketerRepository.deleteById(id)
+		}
+	}
+
+	suspend fun deleteMultipleCricketers(ids: Set<Long>): IO<List<Unit>> {
+		return ids.parTraverse {
+			effect { cricketerRepository.deleteById(it) }
 		}
 	}
 }

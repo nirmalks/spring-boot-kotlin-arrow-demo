@@ -20,7 +20,7 @@ class MatchService(@Autowired val matchRepository: MatchRepository,
         @Autowired val venueService: VenueService) {
     suspend fun save(match: Match): IO<Either<OperationError,Match>> {
         return EitherT.monad<OperationError, ForIO>(IO.monad()).fx.monad {
-            val venue = !EitherT(effect {venueService.save(Venue(Country.INDIA,"chennai")).right()}
+            val venue = !EitherT(effect {venueService.save(Venue(null, Country.INDIA,"chennai")).right()}
                             .handleError { OperationError.DBError("Something went wrong").left()})
             matchRepository.save(match)
         }.value().fix()
